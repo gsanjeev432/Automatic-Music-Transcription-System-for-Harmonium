@@ -1,30 +1,118 @@
-# Automatic-Music-Transcription-System-for-Harmonium
+# Automatic Music Transcription System for Harmonium
 
-This repository contains MATLAB scripts and sample data for developing an automatic transcription system for harmonium recordings.  Feature extraction utilities and basic classification examples are provided to help experiment with different signal processing techniques.
+This repository contains MATLAB scripts, helper functions, and sample feature tables for experimenting with **automatic harmonium note/music transcription** workflows. The current codebase is organized around a classical ML pipeline:
 
-## Repository Structure
-- `mfcc/` – functions and examples for computing Mel Frequency Cepstral Coefficients (MFCC) and Fractional Fourier Transform based MFCC (FRFT-MFCC).
-- `training/` – spreadsheet feature matrices used to train classifiers.  Files are grouped by feature type such as MFCC, STFT, spectral flux, and zero‑crossing rate.
-- `testing/` – feature matrices for evaluating models using the same feature groups as the training set.
-- `features/` – combined feature sets and corresponding label spreadsheets used by the MATLAB scripts.
-- MATLAB scripts in the project root demonstrate common tasks such as feature extraction (`frftMFCC.m`), training (`svmtraining.m`, `Knn_train.m`) and evaluation (`svmtest.m`).
+1. Read `.wav` recordings.
+2. Extract frame-level audio descriptors (MFCC, FRFT-MFCC, STFT, spectral/rhythmic features).
+3. Export features to Excel spreadsheets.
+4. Train classifiers (SVM / KNN) on spreadsheet-based feature matrices.
+5. Evaluate predictions against ground-truth labels.
 
-## Requirements
-- MATLAB R2018a or later.
-- Signal Processing Toolbox and Statistics and Machine Learning Toolbox for audio processing and classification functions.
+> The project is best treated as a **research/academic prototype**. Most scripts use hard-coded local paths and require small edits before they can run on a new machine.
 
-## Getting Started
-1. **Prepare audio data** – place WAV recordings of individual harmonium notes into a working directory.
-2. **Extract features** – edit the path variables at the top of scripts such as `frftMFCC.m` to point to your audio folder and run the script to generate an Excel file containing the selected feature set.
-3. **Create training and testing tables** – consolidate feature spreadsheets into `training/` and `testing/` as demonstrated in the repository.  Include a `labels.xlsx` file with the ground‑truth class for each sample.
-4. **Train a classifier** – use `svmtraining.m` or `Knn_train.m` to train a multi‑class model.  Update the file paths inside the script to match the location of your feature and label spreadsheets.
-5. **Evaluate** – run `svmtest.m` (for SVM) or the equivalent testing script to produce predictions and compute accuracy against the provided labels.
+## What is in this repository
 
-## Data Files
-The repository ships with example feature tables (`train_MFCC.xlsx`, `test_MFCC.xlsx`, etc.) under the `training/` and `testing/` directories.  These are intended as references for formatting your own datasets and for quickly validating the scripts.
+### Core scripts (project root)
 
-## Notes
-The scripts were originally developed on Windows and reference absolute paths (for example, `D:\Sanjeev\...`).  Adjust these paths before running the code.
+- `frftMFCC.m` - batch extraction of FRFT-MFCC features from a folder of WAV files, writing each file's features into `feature.xlsx`.
+- `Otherfeatcode.m` - extraction of additional MIR features (attack time, energy, zero-crossing, flux, MFCC, delta, delta-delta) and export to separate Excel sheets.
+- `svmtraining.m` - loads train/test feature tables from Excel, runs multiclass SVM via `multisvm.m`, computes accuracy.
+- `Knn_train.m` - trains and evaluates a KNN classifier (`fitcknn`) from Excel features/labels.
+- `svmtest.m` - example single-file inference flow: load model, extract MFCCs from one WAV file, classify.
+- `multisvm.m` / `svmm.m` - helper implementation for one-vs-all style multiclass SVM logic.
+- `STFTcode.m`, `MFCCcode.m`, `pcaa.m`, `mfcc.m`, `stft.m` - signal-processing / feature utility scripts.
+
+### Data and feature folders
+
+- `training/` - example training feature matrices (`train_MFCC.xlsx`, `train_STFT.xlsx`, etc.).
+- `testing/` - example testing feature matrices (`test_MFCC.xlsx`, `test_STFT.xlsx`, etc.).
+- `features/` - alternate organized feature exports and labels.
+- `mfcc/` - MFCC/FRFT helper functions, examples, and reference outputs.
+- `model.mat`, `labels.xlsx`, `truelabels.xlsx` - sample model/label artifacts used by scripts.
+
+## Expected workflow
+
+### 1) Prepare audio data
+
+- Collect harmonium recordings as `.wav` files.
+- Keep training and testing audio in separate folders.
+- Ensure labels are encoded numerically (class IDs) in a matching Excel file.
+
+### 2) Extract features
+
+Use one or both strategies:
+
+- **FRFT-MFCC extraction** via `frftMFCC.m`.
+- **Other MIR features** via `Otherfeatcode.m`.
+
+Both scripts iterate over a folder and write feature rows/sheets into Excel workbooks. You can then combine or select feature sets (e.g., MFCC-only, STFT-only, combined).
+
+### 3) Assemble train/test matrices
+
+- Store resulting feature tables under `training/` and `testing/` (or update script paths to your preferred location).
+- Keep row ordering consistent with label files.
+
+### 4) Train a model
+
+- Run `svmtraining.m` for SVM-based classification.
+- Run `Knn_train.m` for KNN baseline comparison.
+
+### 5) Evaluate
+
+- Scripts compute simple accuracy by comparing predicted labels to expected labels.
+- You can extend evaluation with confusion matrices, precision/recall, or per-note accuracy.
+
+## Environment and dependencies
+
+### MATLAB
+
+- Recommended: MATLAB R2018a+.
+- Toolboxes commonly required by these scripts:
+  - Signal Processing Toolbox
+  - Statistics and Machine Learning Toolbox
+
+### Third-party toolbox usage
+
+`Otherfeatcode.m` uses functions such as `miraudio` / `mirfeatures` and `exportation`, which are associated with the **MIRToolbox** ecosystem. Install/configure that toolbox if you intend to run this script as-is.
+
+## Important setup notes before running scripts
+
+1. **Update hard-coded paths**
+   Many files reference absolute Windows paths like `D:\Sanjeev\...`. Replace these with paths on your machine.
+
+2. **Check MATLAB function compatibility**
+   `wavread` appears in legacy code (`svmtest.m`). In modern MATLAB versions, replace with `audioread` where needed.
+
+3. **Excel I/O expectations**
+   The pipeline depends heavily on `xlsread` / `xlswrite`. Confirm Excel support is available in your MATLAB environment.
+
+4. **Feature dimensionality consistency**
+   Train and test matrices must have identical feature dimensions and ordering.
+
+## Quick start checklist
+
+- [ ] Edit all file paths in the scripts you will run.
+- [ ] Verify required toolbox functions are on MATLAB path.
+- [ ] Run feature extraction on your training and testing WAV folders.
+- [ ] Build/update `train_*.xlsx`, `test_*.xlsx`, and label spreadsheets.
+- [ ] Train (`svmtraining.m` or `Knn_train.m`).
+- [ ] Run evaluation and review accuracy.
+
+## Current limitations
+
+- Minimal automation (manual path editing and spreadsheet management).
+- No unified entry-point script for end-to-end execution.
+- Limited experiment tracking/reproducibility metadata.
+- No explicit open-source license file included.
+
+## Suggested improvements (future work)
+
+- Convert hard-coded paths to configurable parameters.
+- Move from Excel-based data exchange to `.mat` or `.csv` pipelines.
+- Add standardized train/validation/test split scripts.
+- Add confusion matrix + detailed metrics outputs.
+- Provide one master script to run complete workflow.
 
 ## License
-This project does not currently include a license.  Please contact the author if you intend to use the code beyond personal experimentation.
+
+No license file is currently included in this repository. If you plan to reuse or redistribute this work, contact the repository owner and add an explicit license.
